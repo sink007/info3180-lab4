@@ -1,6 +1,6 @@
 import os
 from app import app, db, login_manager
-from flask import render_template, request, redirect, url_for, flash, session, abort
+from flask import render_template, request, redirect, url_for, flash, session, abort, send_from_directory
 from flask_login import login_user, logout_user, current_user, login_required
 from werkzeug.utils import secure_filename
 from app.models import UserProfile
@@ -9,6 +9,13 @@ from app.forms import UploadForm
 from werkzeug.security import check_password_hash
 
 
+def get_uploaded_images():
+    rootdir = os.getcwd()  
+    image_files = []  
+    for subdir, dirs, files in os.walk(rootdir + '/uploads'):
+        for file in files:
+            image_files.append(file)
+    return image_files
 ###
 # Routing for your application.
 ###
@@ -40,6 +47,22 @@ def upload():
         return redirect(url_for('home')) # Update this to redirect the user to a route that displays all uploaded image files
     return render_template('upload.html',form=form)
 
+@app.route("/uploads/<filename>")
+def get_image(filename):
+    return send_from_directory(os.path.join(os.getcwd(),app.config['UPLOAD_FOLDER']), filename)
+
+
+@app.route("/files")
+@login_required
+def files():
+    images = get_uploaded_images()
+    return render_template('files.html',images=images)
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    flash('You have been logged out successfully', 'info')
+    return redirect(url_for('home'))
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
